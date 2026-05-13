@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DustGuard AI | Autonomous Construction Dust Suppression</title>
+    <meta name="description" content="Real-time construction dust monitoring and autonomous suppression dashboard using computer vision and IoT sensors.">
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tabler Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root {
+            --primary: #1D9E75;
+            --danger: #E24B4A;
+            --warning: #EF9F27;
+            --info: #378ADD;
+            --bg-body: #F8FAFC;
+            --bg-card: #FFFFFF;
+            --text-main: #1E293B;
+            --text-muted: #64748B;
+            --border: #E2E8F0;
+            --sidebar-width: 260px;
+            --radius: 12px;
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar Styles */
+        aside {
+            width: var(--sidebar-width);
+            background: #fff;
+            border-right: 0.5px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            z-index: 50;
+        }
+
+        .logo-area {
+            padding: 24px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 0.5px solid var(--border);
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .logo-text {
+            font-weight: 700;
+            font-size: 1.1rem;
+            letter-spacing: -0.02em;
+            color: var(--text-main);
+        }
+
+        .nav-links {
+            padding: 20px 12px;
+            flex: 1;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            color: var(--text-muted);
+            text-decoration: none;
+            border-radius: 8px;
+            margin-bottom: 4px;
+            transition: all 0.2s ease;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .nav-item:hover {
+            background: #F1F5F9;
+            color: var(--text-main);
+        }
+
+        .nav-item.active {
+            background: #ECFDF5;
+            color: var(--primary);
+        }
+
+        .nav-item i {
+            font-size: 1.25rem;
+        }
+
+        /* Main Content area */
+        main {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: 24px 32px;
+            max-width: 1400px;
+        }
+
+        /* Top Bar */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 32px;
+        }
+
+        .page-title h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .live-indicator-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .live-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #fff;
+            padding: 8px 16px;
+            border-radius: 99px;
+            border: 0.5px solid var(--border);
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+
+        .pulse-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--primary);
+            border-radius: 50%;
+            box-shadow: 0 0 0 0 rgba(29, 158, 117, 0.4);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(29, 158, 117, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(29, 158, 117, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(29, 158, 117, 0); }
+        }
+
+        .clock {
+            font-weight: 500;
+            color: var(--text-muted);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Grid Layouts */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            padding: 24px;
+            border-radius: var(--radius);
+            border: 0.5px solid var(--border);
+            box-shadow: var(--shadow);
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        /* Dashboard Specific */
+        .dashboard-content {
+            display: grid;
+            grid-template-columns: 3fr 2fr;
+            gap: 24px;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: var(--radius);
+            border: 0.5px solid var(--border);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin-bottom: 24px;
+        }
+
+        .card-header {
+            padding: 20px 24px;
+            border-bottom: 0.5px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-header h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .card-body {
+            padding: 24px;
+        }
+
+        /* Site List */
+        .site-item {
+            display: flex;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 0.5px solid var(--border);
+        }
+
+        .site-item:last-child { border-bottom: none; }
+
+        .site-status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 16px;
+        }
+
+        .dot-green { background: var(--primary); }
+        .dot-amber { background: var(--warning); }
+        .dot-red { 
+            background: var(--danger); 
+            animation: alert-pulse 1.5s infinite;
+        }
+
+        @keyframes alert-pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+
+        .site-info { flex: 1; }
+        .site-name { font-weight: 600; font-size: 0.95rem; margin-bottom: 2px; }
+        .site-id { font-size: 0.75rem; color: var(--text-muted); }
+        
+        .site-reading {
+            text-align: right;
+        }
+        .reading-value { font-weight: 700; font-size: 1.1rem; }
+        .reading-unit { font-size: 0.75rem; color: var(--text-muted); }
+
+        /* Detection Page */
+        .detection-layout {
+            display: grid;
+            grid-template-columns: 3fr 2fr;
+            gap: 24px;
+        }
+
+        .camera-feed {
+            aspect-ratio: 16/9;
+            background: #0f172a;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), 
+                              linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+
+        .cam-label {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            backdrop-filter: blur(4px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .rec-indicator {
+            width: 8px;
+            height: 8px;
+            background: var(--danger);
+            border-radius: 50%;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .bounding-box {
+            position: absolute;
+            border: 2px solid var(--danger);
+            background: rgba(226, 75, 74, 0.1);
+            pointer-events: none;
+            display: none;
+        }
+
+        .box-label {
+            position: absolute;
+            top: -24px;
+            left: -2px;
+            background: var(--danger);
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            white-space: nowrap;
+        }
+
+        .sensor-bars {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .sensor-item { margin-bottom: 16px; }
+        .sensor-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .progress-bg {
+            height: 12px;
+            background: #E2E8F0;
+            border-radius: 99px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 0.5s ease, background 0.3s ease;
+        }
+
+        .log-container {
+            height: 300px;
+            overflow-y: auto;
+            background: #f1f5f9;
+            border-radius: 8px;
+            padding: 12px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.8rem;
+            border: 0.5px solid var(--border);
+        }
+
+        .log-entry {
+            margin-bottom: 4px;
+            padding-bottom: 4px;
+            border-bottom: 0.5px solid rgba(0,0,0,0.05);
+        }
+
+        .log-ts { color: var(--text-muted); margin-right: 8px; }
+        .log-msg-info { color: var(--info); }
+        .log-msg-alert { color: var(--danger); font-weight: bold; }
+        .log-msg-ok { color: var(--primary); }
+
+        /* Suppression Page */
+        .zone-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .zone-card {
+            background: white;
+            border: 0.5px solid var(--border);
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .zone-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .zone-name { font-weight: 700; font-size: 1rem; }
+        
+        /* Toggle Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .switch input { opacity: 0; width: 0; height: 0; }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #cbd5e1;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-outline { background: white; border: 1px solid var(--border); color: var(--text-main); }
+        .btn-danger { background: var(--danger); color: white; }
+        
+        .btn:hover { filter: brightness(0.9); }
+
+        /* Accountability Page */
+        .contractor-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .contractor-item {
+            background: #fff;
+            padding: 16px;
+            border-radius: 8px;
+            border: 0.5px solid var(--border);
+        }
+
+        .contractor-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .badge {
+            padding: 4px 10px;
+            border-radius: 99px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-success { background: #DCFCE7; color: #166534; }
+        .badge-warning { background: #FEF3C7; color: #92400E; }
+        .badge-danger { background: #FEE2E2; color: #991B1B; }
+
+        .score-bar-bg {
+            height: 8px;
+            background: #F1F5F9;
+            border-radius: 99px;
+            overflow: hidden;
+        }
+
+        .score-bar-fill {
+            height: 100%;
+            width: 0%;
+            transition: width 1s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        /* Reports Page */
+        .report-summary-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .summary-box {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border: 0.5px solid var(--border);
+            text-align: center;
+        }
+
+        .summary-val { font-size: 1.5rem; font-weight: 700; display: block; margin-bottom: 4px; }
+        .summary-lbl { color: var(--text-muted); font-size: 0.8rem; }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            .dashboard-content, .detection-layout { grid-template-columns: 1fr; }
+            .zone-grid { grid-template-columns: repeat(2, 1fr); }
+        }
+
+        /* Utility */
+        .hidden { display: none; }
+        .mb-4 { margin-bottom: 16px; }
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .gap-2 { gap: 8px; }
+        .justify-between { justify-content: space-between; }
+        .mt-4 { margin-top: 16px; }
+
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Navigation -->
+    <aside>
+        <div class="logo-area">
+            <div class="logo-icon">
+                <i class="ti ti-shield-checkered"></i>
+            </div>
+            <div class="logo-text">DustGuard AI</div>
+        </div>
+        <nav class="nav-links">
+            <div class="nav-item active" onclick="switchTab('dashboard')">
+                <i class="ti ti-layout-dashboard"></i>
+                Dashboard
+            </div>
+            <div class="nav-item" onclick="switchTab('detection')">
+                <i class="ti ti-scan"></i>
+                Detection
+            </div>
+            <div class="nav-item" onclick="switchTab('suppression')">
+                <i class="ti ti-droplet-half-2"></i>
+                Suppression
+            </div>
+            <div class="nav-item" onclick="switchTab('accountability')">
+                <i class="ti ti-users"></i>
+                Accountability
+            </div>
+            <div class="nav-item" onclick="switchTab('reports')">
+                <i class="ti ti-report-analytics"></i>
+                Reports
+            </div>
+        </nav>
+        <div style="padding: 24px; border-top: 0.5px solid var(--border); font-size: 0.75rem; color: var(--text-muted);">
+            v2.4.0-Stable <br> Edge Node: BLR-CENTRAL-01
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main>
+        <header>
+            <div class="page-title">
+                <h1 id="page-title-text">Dashboard</h1>
+            </div>
+            <div class="live-indicator-wrapper">
+                <div class="clock" id="live-clock">23:50:42</div>
+                <div class="live-status">
+                    <div class="pulse-dot"></div>
+                    LIVE SYSTEM
+                </div>
+            </div>
+        </header>
+
+        <!-- DASHBOARD SECTION -->
+        <section id="dashboard-section">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label"><i class="ti ti-building-community"></i> Active Sites</div>
+                    <div class="stat-value">142</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label"><i class="ti ti-wind"></i> Avg PM2.5 (μg/m³)</div>
+                    <div class="stat-value" id="avg-pm25">84.2</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label"><i class="ti ti-droplet"></i> Suppressions Today</div>
+                    <div class="stat-value" id="suppressions-today">1,248</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label"><i class="ti ti-lock"></i> Violations Blocked</div>
+                    <div class="stat-value" id="violations-blocked">86</div>
+                </div>
+            </div>
+
+            <div class="dashboard-content">
+                <div class="left-col">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>PM2.5 Trend (6h)</h2>
+                            <span style="font-size: 0.75rem; color: var(--text-muted);">Real-time site telemetry</span>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="pmTrendChart" height="280"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Live Event Log</h2>
+                            <button class="btn btn-outline" style="padding: 4px 12px; font-size: 0.75rem;">Clear Log</button>
+                        </div>
+                        <div class="card-body" id="event-log" style="max-height: 300px; overflow-y: auto; padding: 0;">
+                            <!-- Log entries will be injected here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="right-col">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Site Status (Bengaluru)</h2>
+                        </div>
+                        <div class="card-body" id="site-status-list">
+                            <!-- Sites injected here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DETECTION SECTION -->
+        <section id="detection-section" class="hidden">
+            <div class="detection-layout">
+                <div class="left-col">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Live Visual Analytics</h2>
+                            <div class="flex gap-2">
+                                <button class="btn btn-primary" onclick="simulateDustEvent()">
+                                    <i class="ti ti-alert-triangle"></i> Simulate Dust Event
+                                </button>
+                                <button class="btn btn-outline" onclick="runDetectionCycle()">
+                                    <i class="ti ti-refresh"></i> Run Cycle
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="camera-feed" id="cam-feed">
+                                <div class="cam-label">
+                                    <div class="rec-indicator"></div>
+                                    CAM-01: WHITEFIELD JUNCTION [LIVE]
+                                </div>
+                                <div class="bounding-box" id="dust-box" style="top: 30%; left: 40%; width: 25%; height: 35%;">
+                                    <div class="box-label">DUST_PLUME: 98.4%</div>
+                                </div>
+                                <div class="bounding-box" id="uncovered-box" style="top: 60%; left: 20%; width: 15%; height: 20%; border-color: var(--warning); background: rgba(239, 159, 39, 0.1);">
+                                    <div class="box-label" style="background: var(--warning);">UNCOVERED_MATERIAL: 92.1%</div>
+                                </div>
+                            </div>
+
+                            <div class="mt-4">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 style="font-size: 0.95rem; font-weight: 600;">Detection Confidence Score</h3>
+                                    <span id="confidence-val" style="font-weight: 700; color: var(--primary);">0%</span>
+                                </div>
+                                <div class="progress-bg">
+                                    <div id="confidence-bar" class="progress-fill" style="background: var(--primary);"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Decision Engine Log (Closed Loop)</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="log-container" id="decision-log">
+                                <div class="log-entry"><span class="log-ts">[23:50:01]</span> <span class="log-msg-info">System initialized. Listening for edge telemetry...</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="right-col">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Live Sensor Telemetry</h2>
+                        </div>
+                        <div class="card-body sensor-bars">
+                            <div class="sensor-item">
+                                <div class="sensor-header">
+                                    <span>PM2.5 Level</span>
+                                    <span id="s-pm25">42 μg/m³</span>
+                                </div>
+                                <div class="progress-bg">
+                                    <div id="bar-pm25" class="progress-fill" style="width: 42%; background: var(--primary);"></div>
+                                </div>
+                            </div>
+                            <div class="sensor-item">
+                                <div class="sensor-header">
+                                    <span>PM10 Level</span>
+                                    <span id="s-pm10">68 μg/m³</span>
+                                </div>
+                                <div class="progress-bg">
+                                    <div id="bar-pm10" class="progress-fill" style="width: 55%; background: var(--warning);"></div>
+                                </div>
+                            </div>
+                            <div class="sensor-item">
+                                <div class="sensor-header">
+                                    <span>Ambient Humidity</span>
+                                    <span id="s-humidity">45%</span>
+                                </div>
+                                <div class="progress-bg">
+                                    <div id="bar-humidity" class="progress-fill" style="width: 45%; background: var(--info);"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card" style="background: #0f172a; color: white;">
+                        <div class="card-body" style="text-align: center; padding: 32px;">
+                            <i class="ti ti-cpu" style="font-size: 3rem; color: var(--primary); margin-bottom: 16px;"></i>
+                            <h3 style="margin-bottom: 8px;">Edge AI Core</h3>
+                            <p style="font-size: 0.8rem; color: #94a3b8;">Processing 30 FPS at 4ms latency. Model: DustNet-v4-Mobile</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SUPPRESSION SECTION -->
+        <section id="suppression-section" class="hidden">
+            <div class="flex justify-between items-center mb-4">
+                <div>
+                    <h2 style="font-size: 1.1rem; font-weight: 600;">Active Site: Marathahalli Flyover Extension</h2>
+                    <p style="font-size: 0.85rem; color: var(--text-muted);">Site ID: BLR-MH-092 | 6 suppression zones active</p>
+                </div>
+                <div class="flex gap-2">
+                    <button class="btn btn-primary" onclick="toggleAllZones(true)">Activate All</button>
+                    <button class="btn btn-outline" onclick="toggleAllZones(false)">Stop All</button>
+                </div>
+            </div>
+
+            <div class="zone-grid" id="zone-container">
+                <!-- Zones A-F will be injected here -->
+            </div>
+
+            <div class="dashboard-content">
+                <div class="left-col">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Water Usage Today (Litres)</h2>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="waterUsageChart" height="250"></canvas>
+                        </div>
+                    </div>
+                </div>
+                <div class="right-col">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>System Efficiency</h2>
+                        </div>
+                        <div class="card-body">
+                            <div class="flex justify-between mb-4">
+                                <span style="font-size: 0.9rem;">PM10 Reduction</span>
+                                <span style="font-weight: 700; color: var(--primary);">68%</span>
+                            </div>
+                            <div class="flex justify-between mb-4">
+                                <span style="font-size: 0.9rem;">Water Waste Reduction</span>
+                                <span style="font-weight: 700; color: var(--info);">60%</span>
+                            </div>
+                            <div class="flex justify-between mb-4">
+                                <span style="font-size: 0.9rem;">False Positive Rate</span>
+                                <span style="font-weight: 700; color: var(--danger);">4.2%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span style="font-size: 0.9rem;">Response Lag</span>
+                                <span style="font-weight: 700; color: var(--primary);">0 sec (Edge)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ACCOUNTABILITY SECTION -->
+        <section id="accountability-section" class="hidden">
+            <div class="dashboard-content">
+                <div class="left-col">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Contractor Accountability Scorecard</h2>
+                        </div>
+                        <div class="card-body contractor-list" id="contractor-list">
+                            <!-- Injected -->
+                        </div>
+                    </div>
+                </div>
+                <div class="right-col">
+                    <div class="card">
+                        <div class="card-header">
+                            <h2>Violation Heatmap (By Hour)</h2>
+                        </div>
+                        <div class="card-body">
+                            <canvas id="violationHeatmap" height="250"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <h2 style="color: var(--danger);">Penalty Risk Exposure</h2>
+                        </div>
+                        <div class="card-body">
+                            <ul style="list-style: none; padding: 0; font-size: 0.85rem;">
+                                <li style="margin-bottom: 12px; display: flex; justify-content: space-between;">
+                                    <span>TechBuild Infra</span>
+                                    <span style="font-weight: 700;">₹12.5L / day</span>
+                                </li>
+                                <li style="margin-bottom: 12px; display: flex; justify-content: space-between;">
+                                    <span>FastTrack Constr.</span>
+                                    <span style="font-weight: 700;">₹8.2L / day</span>
+                                </li>
+                            </ul>
+                            <div style="background: #FEE2E2; padding: 12px; border-radius: 8px; margin-top: 16px; font-size: 0.75rem; color: #991B1B;">
+                                <i class="ti ti-info-circle"></i> Citing CPCB Environment Compensation Guidelines 2019 for non-compliance in NCR/Major Cities.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- REPORTS SECTION -->
+        <section id="reports-section" class="hidden">
+            <div class="report-summary-grid">
+                <div class="summary-box">
+                    <span class="summary-val">23,847</span>
+                    <span class="summary-lbl">Events Detected</span>
+                </div>
+                <div class="summary-box">
+                    <span class="summary-val">23,201</span>
+                    <span class="summary-lbl">Auto-Suppressions</span>
+                </div>
+                <div class="summary-box">
+                    <span class="summary-val">646</span>
+                    <span class="summary-lbl">Manual Overrides</span>
+                </div>
+                <div class="summary-box">
+                    <span class="summary-val">41,200L</span>
+                    <span class="summary-lbl">Water Saved</span>
+                </div>
+                <div class="summary-box">
+                    <span class="summary-val">₹1.2 Cr</span>
+                    <span class="summary-lbl">Penalties Prevented</span>
+                </div>
+                <div class="summary-box">
+                    <span class="summary-val">97.3%</span>
+                    <span class="summary-lbl">System Uptime</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2>Monthly PM2.5 Impact Trend (Jan - May)</h2>
+                </div>
+                <div class="card-body">
+                    <canvas id="monthlyImpactChart" height="300"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2>NAAQS Compliance Status (Daily Avg)</h2>
+                </div>
+                <div class="card-body">
+                    <div class="sensor-item">
+                        <div class="sensor-header">
+                            <span>PM2.5 (Limit: 60 μg/m³)</span>
+                            <span style="color: var(--primary);">48.2 μg/m³</span>
+                        </div>
+                        <div class="progress-bg">
+                            <div class="progress-fill" style="width: 80%; background: var(--primary);"></div>
+                        </div>
+                    </div>
+                    <div class="sensor-item">
+                        <div class="sensor-header">
+                            <span>PM10 (Limit: 100 μg/m³)</span>
+                            <span style="color: var(--warning);">92.4 μg/m³</span>
+                        </div>
+                        <div class="progress-bg">
+                            <div class="progress-fill" style="width: 92%; background: var(--warning);"></div>
+                        </div>
+                    </div>
+                    <div class="sensor-item">
+                        <div class="sensor-header">
+                            <span>NO₂ (Limit: 80 μg/m³)</span>
+                            <span style="color: var(--primary);">32.1 μg/m³</span>
+                        </div>
+                        <div class="progress-bg">
+                            <div class="progress-fill" style="width: 40%; background: var(--primary);"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script>
+        // --- State & Constants ---
+        const SITES = [
+            { id: 'BLR-WF-001', name: 'Whitefield Ring Road', pm: 124, status: 'red' },
+            { id: 'BLR-MH-092', name: 'Marathahalli Flyover', pm: 82, status: 'amber' },
+            { id: 'BLR-HB-045', name: 'Hebbal Expressway', pm: 45, status: 'green' },
+            { id: 'BLR-KM-112', name: 'Koramangala Metro', pm: 58, status: 'green' },
+            { id: 'BLR-EC-201', name: 'Electronic City Ph2', pm: 94, status: 'amber' }
+        ];
+
+        const CONTRACTORS = [
+            { name: 'GreenBuild Infra', score: 94, status: 'Excellent', color: '#1D9E75' },
+            { name: 'Hebbal Roads Ltd', score: 81, status: 'Good', color: '#378ADD' },
+            { name: 'UrbanArc Projects', score: 72, status: 'At Risk', color: '#EF9F27' },
+            { name: 'TechBuild Infra', score: 48, status: 'Non-Compliant', color: '#E24B4A' },
+            { name: 'FastTrack Constr.', score: 31, status: 'Non-Compliant', color: '#E24B4A' }
+        ];
+
+        let charts = {};
+        let suppressionZones = Array.from({ length: 6 }, (_, i) => ({
+            id: String.fromCharCode(65 + i),
+            active: false,
+            pm: Math.floor(Math.random() * 100) + 50
+        }));
+
+        // --- Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            updateClock();
+            setInterval(updateClock, 1000);
+            renderSiteStatus();
+            renderContractors();
+            renderZones();
+            initCharts();
+            addLogEntry('System active. Monitoring 142 sites.', 'info');
+            
+            // Auto-run detection cycle on load
+            setTimeout(runDetectionCycle, 1000);
+        });
+
+        // --- Navigation ---
+        function switchTab(tabId) {
+            // Update Title
+            const titles = {
+                dashboard: 'Dashboard',
+                detection: 'Detection',
+                suppression: 'Suppression',
+                accountability: 'Accountability',
+                reports: 'Reports'
+            };
+            document.getElementById('page-title-text').innerText = titles[tabId];
+
+            // Toggle Sections
+            document.querySelectorAll('main > section').forEach(s => s.classList.add('hidden'));
+            document.getElementById(`${tabId}-section`).classList.remove('hidden');
+
+            // Toggle Nav Items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.innerText.toLowerCase().includes(tabId)) {
+                    item.classList.add('active');
+                }
+            });
+
+            // Re-render charts for clarity
+            if (charts.pmTrend) charts.pmTrend.update();
+        }
+
+        // --- UI Updates ---
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('live-clock').innerText = now.toLocaleTimeString('en-GB');
+        }
+
+        function renderSiteStatus() {
+            const container = document.getElementById('site-status-list');
+            container.innerHTML = SITES.map(site => `
+                <div class="site-item">
+                    <div class="site-status-dot dot-${site.status}"></div>
+                    <div class="site-info">
+                        <div class="site-name">${site.name}</div>
+                        <div class="site-id">${site.id}</div>
+                    </div>
+                    <div class="site-reading">
+                        <div class="reading-value">${site.pm}</div>
+                        <div class="reading-unit">μg/m³</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderContractors() {
+            const container = document.getElementById('contractor-list');
+            container.innerHTML = CONTRACTORS.map(c => `
+                <div class="contractor-item">
+                    <div class="contractor-header">
+                        <span style="font-weight: 700;">${c.name}</span>
+                        <span class="badge ${c.score > 80 ? 'badge-success' : c.score > 50 ? 'badge-warning' : 'badge-danger'}">${c.status}</span>
+                    </div>
+                    <div style="margin-bottom: 8px; font-size: 0.85rem; display: flex; justify-content: space-between;">
+                        <span>Compliance Score</span>
+                        <span style="font-weight: 700; color: ${c.color}">${c.score}%</span>
+                    </div>
+                    <div class="score-bar-bg">
+                        <div class="score-bar-fill" style="width: ${c.score}%; background: ${c.color}"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function renderZones() {
+            const container = document.getElementById('zone-container');
+            container.innerHTML = suppressionZones.map((z, idx) => `
+                <div class="zone-card">
+                    <div class="zone-top">
+                        <div class="zone-name">Zone ${z.id}</div>
+                        <label class="switch">
+                            <input type="checkbox" ${z.active ? 'checked' : ''} onchange="toggleZone(${idx})">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">Current PM:</span>
+                        <span style="font-weight: 700;">${z.pm} μg/m³</span>
+                    </div>
+                    <div style="font-size: 0.75rem; color: ${z.active ? 'var(--primary)' : 'var(--text-muted)'}; font-weight: 600;">
+                        ${z.active ? '<i class="ti ti-droplet-filled"></i> Suppressing...' : '<i class="ti ti-circle-x"></i> Idle'}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function addLogEntry(msg, type) {
+            const log = document.getElementById('event-log');
+            const ts = new Date().toLocaleTimeString('en-GB');
+            const entry = document.createElement('div');
+            entry.style.padding = '12px 24px';
+            entry.style.borderBottom = '0.5px solid var(--border)';
+            entry.style.fontSize = '0.85rem';
+            
+            let icon = 'info-circle';
+            let color = 'var(--info)';
+            let bg = 'transparent';
+
+            if (type === 'alert') {
+                icon = 'alert-triangle';
+                color = 'var(--danger)';
+                bg = '#FFF1F2';
+            } else if (type === 'ok') {
+                icon = 'circle-check';
+                color = 'var(--primary)';
+                bg = '#F0FDF4';
+            }
+
+            entry.style.background = bg;
+            entry.innerHTML = `
+                <div class="flex gap-2 items-center">
+                    <i class="ti ti-${icon}" style="color: ${color}"></i>
+                    <span style="color: var(--text-muted); font-size: 0.75rem;">${ts}</span>
+                    <span style="font-weight: 500;">${msg}</span>
+                </div>
+            `;
+            log.prepend(entry);
+        }
+
+        function addDecisionLog(msg, type) {
+            const log = document.getElementById('decision-log');
+            const ts = new Date().toLocaleTimeString('en-GB');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `<span class="log-ts">[${ts}]</span> <span class="log-msg-${type}">${msg}</span>`;
+            log.appendChild(entry);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        // --- Interactions ---
+        function runDetectionCycle() {
+            const btn = event?.currentTarget;
+            if (btn) btn.disabled = true;
+
+            addDecisionLog("Initializing Detection Cycle...", "info");
+            
+            let confidence = 0;
+            const interval = setInterval(() => {
+                confidence += Math.floor(Math.random() * 15) + 5;
+                if (confidence >= 95) {
+                    confidence = 98.4;
+                    clearInterval(interval);
+                    completeCycle();
+                }
+                document.getElementById('confidence-bar').style.width = confidence + '%';
+                document.getElementById('confidence-val').innerText = confidence + '%';
+                
+                // Randomize sensor bars
+                document.getElementById('bar-pm25').style.width = (Math.random() * 40 + 30) + '%';
+                document.getElementById('bar-pm10').style.width = (Math.random() * 40 + 50) + '%';
+                document.getElementById('bar-humidity').style.width = (Math.random() * 20 + 40) + '%';
+            }, 100);
+
+            function completeCycle() {
+                addDecisionLog("CV Scan Complete: 2 features identified.", "ok");
+                addDecisionLog("Telemetery Verified: PM2.5 within safety margin.", "ok");
+                addDecisionLog("Decision: NO_ACTION_REQUIRED. Loop reset.", "info");
+                if (btn) btn.disabled = false;
+            }
+        }
+
+        function simulateDustEvent() {
+            addDecisionLog("CRITICAL: Dust plume detected at SITE_WF_001!", "alert");
+            document.getElementById('dust-box').style.display = 'block';
+            document.getElementById('uncovered-box').style.display = 'block';
+            
+            document.getElementById('bar-pm25').style.width = '88%';
+            document.getElementById('bar-pm25').style.background = 'var(--danger)';
+            document.getElementById('s-pm25').innerText = '184 μg/m³';
+            
+            addDecisionLog("VERIFYING: Cross-referencing particulate spike...", "info");
+            
+            setTimeout(() => {
+                addDecisionLog("ACTION: Triggering autonomous suppression Zone B, C.", "alert");
+                addLogEntry("Autonomous Suppression Triggered: Whitefield Ring Road", "alert");
+                
+                setTimeout(() => {
+                    document.getElementById('dust-box').style.display = 'none';
+                    document.getElementById('uncovered-box').style.display = 'none';
+                    document.getElementById('bar-pm25').style.width = '42%';
+                    document.getElementById('bar-pm25').style.background = 'var(--primary)';
+                    document.getElementById('s-pm25').innerText = '42 μg/m³';
+                    addDecisionLog("EVENT_RESOLVED: PM levels normalized. Suppression deactivated.", "ok");
+                    addLogEntry("Air Quality Restored: Whitefield Ring Road", "ok");
+                }, 3000);
+            }, 1000);
+        }
+
+        function toggleZone(idx) {
+            suppressionZones[idx].active = !suppressionZones[idx].active;
+            renderZones();
+        }
+
+        function toggleAllZones(val) {
+            suppressionZones.forEach(z => z.active = val);
+            renderZones();
+        }
+
+        // --- Charts ---
+        function initCharts() {
+            Chart.defaults.font.family = "'Inter', sans-serif";
+            Chart.defaults.color = '#64748B';
+
+            // 1. PM Trend Chart
+            const ctx1 = document.getElementById('pmTrendChart').getContext('2d');
+            charts.pmTrend = new Chart(ctx1, {
+                type: 'line',
+                data: {
+                    labels: ['18:00', '19:00', '20:00', '21:00', '22:00', '23:00'],
+                    datasets: [
+                        {
+                            label: 'Whitefield',
+                            data: [110, 145, 120, 160, 130, 124],
+                            borderColor: '#E24B4A',
+                            backgroundColor: 'rgba(226, 75, 74, 0.05)',
+                            fill: true,
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Marathahalli',
+                            data: [80, 90, 85, 110, 95, 82],
+                            borderColor: '#EF9F27',
+                            tension: 0.4
+                        },
+                        {
+                            label: 'Hebbal',
+                            data: [40, 50, 42, 48, 44, 45],
+                            borderColor: '#1D9E75',
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom' } },
+                    scales: { y: { beginAtZero: false, grid: { borderDash: [2, 2] } } }
+                }
+            });
+
+            // 2. Water Usage Chart
+            const ctx2 = document.getElementById('waterUsageChart').getContext('2d');
+            charts.water = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: ['Zone A', 'Zone B', 'Zone C', 'Zone D', 'Zone E', 'Zone F'],
+                    datasets: [{
+                        label: 'Litres Used',
+                        data: [450, 820, 310, 150, 640, 290],
+                        backgroundColor: '#378ADD',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // 3. Violation Heatmap
+            const ctx3 = document.getElementById('violationHeatmap').getContext('2d');
+            new Chart(ctx3, {
+                type: 'bar',
+                data: {
+                    labels: ['6am', '7am', '8am', '9am', '10am', '11am', '12pm', '1pm', '2pm', '3pm', '4pm', '5pm'],
+                    datasets: [{
+                        label: 'Violations',
+                        data: [2, 5, 8, 12, 15, 10, 8, 14, 28, 32, 12, 6],
+                        backgroundColor: (context) => {
+                            const val = context.raw;
+                            return val > 20 ? '#E24B4A' : val > 10 ? '#EF9F27' : '#1D9E75';
+                        },
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // 4. Monthly Impact
+            const ctx4 = document.getElementById('monthlyImpactChart').getContext('2d');
+            new Chart(ctx4, {
+                type: 'line',
+                data: {
+                    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
+                    datasets: [
+                        {
+                            label: 'Before DustGuard',
+                            data: [195, 205, 198, 210, 202],
+                            borderColor: '#E24B4A',
+                            borderDash: [5, 5],
+                            tension: 0
+                        },
+                        {
+                            label: 'After DustGuard',
+                            data: [180, 165, 142, 128, 118],
+                            borderColor: '#1D9E75',
+                            backgroundColor: 'rgba(29, 158, 117, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'top' } }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

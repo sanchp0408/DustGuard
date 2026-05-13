@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DustGuard AI | Autonomous Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+
+    <aside>
+        <div class="logo-area">
+            <div class="logo-icon"><i class="ti ti-shield-checkered"></i></div>
+            <div class="logo-text">DustGuard AI</div>
+        </div>
+        <nav class="nav-links">
+            <div class="nav-item active" onclick="switchTab('dashboard')"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
+            <div class="nav-item" onclick="switchTab('detection')"><i class="ti ti-scan"></i> Detection</div>
+            <div class="nav-item" onclick="switchTab('suppression')"><i class="ti ti-droplet-half-2"></i> Suppression</div>
+            <div class="nav-item" onclick="switchTab('accountability')"><i class="ti ti-users"></i> Accountability</div>
+            <div class="nav-item" onclick="switchTab('reports')"><i class="ti ti-report-analytics"></i> Reports</div>
+        </nav>
+    </aside>
+
+    <main>
+        <header>
+            <div class="page-title"><h1>DustGuard Dashboard</h1></div>
+            <div class="live-indicator-wrapper">
+                <div class="clock" id="live-clock">00:00:00</div>
+                <div class="live-status"><div class="pulse-dot"></div> LIVE</div>
+            </div>
+        </header>
+
+        <!-- DASHBOARD -->
+        <section id="dashboard-section">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-label">Active Sites</div>
+                    <div class="stat-value" id="stat-active-sites">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Avg PM2.5</div>
+                    <div class="stat-value" id="stat-avg-pm">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Suppressions</div>
+                    <div class="stat-value" id="stat-suppressions">--</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Violations</div>
+                    <div class="stat-value" id="stat-violations">--</div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 3fr 2fr; gap: 24px;">
+                <div class="card">
+                    <div class="card-header"><h2>PM2.5 Trend (6h)</h2></div>
+                    <div class="card-body"><canvas id="pmTrendChart" height="280"></canvas></div>
+                    <div class="card-header"><h2>Live Events</h2></div>
+                    <div id="event-log" style="max-height: 400px; overflow-y: auto;"></div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h2>Site Status</h2></div>
+                    <div class="card-body" id="site-status-list"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- DETECTION -->
+        <section id="detection-section" class="hidden">
+            <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+                <div class="card">
+                    <div class="card-header">
+                        <h2>Live View</h2>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-primary" onclick="simulateDustEvent()">Simulate Dust</button>
+                            <button class="btn btn-outline" onclick="runDetectionCycle()">Run Cycle</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="camera-feed">
+                            <div class="cam-label"><div class="rec-indicator"></div> CAM-01 [LIVE]</div>
+                            <div class="bounding-box" id="dust-box" style="top: 30%; left: 40%; width: 25%; height: 35%;">
+                                <div class="box-label">DUST_PLUME: 98%</div>
+                            </div>
+                        </div>
+                        <div style="margin-top: 20px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                                <span>Confidence</span> <span id="confidence-val">0%</span>
+                            </div>
+                            <div class="progress-bg"><div id="confidence-bar" class="progress-fill" style="background: var(--primary);"></div></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header"><h2>Decision Log</h2></div>
+                    <div class="card-body">
+                        <div id="decision-log" style="height: 400px; overflow-y: auto; background: #f1f5f9; padding: 12px; font-family: monospace; font-size: 0.8rem;"></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- SUPPRESSION -->
+        <section id="suppression-section" class="hidden">
+            <div id="zone-container" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px;"></div>
+        </section>
+
+        <!-- ACCOUNTABILITY -->
+        <section id="accountability-section" class="hidden">
+            <div id="contractor-list"></div>
+        </section>
+
+        <!-- REPORTS -->
+        <section id="reports-section" class="hidden">
+            <div class="card"><div class="card-header"><h2>Monthly Report</h2></div><div class="card-body">Historical data synchronization in progress...</div></div>
+        </section>
+
+    </main>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
